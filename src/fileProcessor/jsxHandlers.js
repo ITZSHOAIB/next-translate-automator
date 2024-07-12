@@ -1,6 +1,7 @@
 const t = require("@babel/types");
 const { createTranslationKey } = require("../translation");
 const { isURL } = require("../utils");
+const { processLiteralValue } = require("./templateLiteralHandlers");
 
 const processJSXAttributes = (path, config, filePath, updatedTranslations) => {
   const { name, value } = path.node;
@@ -9,33 +10,10 @@ const processJSXAttributes = (path, config, filePath, updatedTranslations) => {
     (t.isStringLiteral(value) || t.isTemplateLiteral(value)) &&
     !isURL(value.value)
   ) {
-    const textValue = t.isTemplateLiteral(value)
-      ? value.quasis.map(quasi => quasi.value.raw).join('${')
-      : value.value;
-    const key = createTranslationKey(config.componentsDir, filePath, textValue);
-    updatedTranslations[key] = textValue.replace(/\$\{([^\}]+)\}/g, '${$1}');
-
-    if (t.isTemplateLiteral(value)) {
-      const args = [];
-      value.expressions.forEach((expr, index) => {
-        const varName = `var${index}`;
-        args.push(t.objectProperty(t.identifier(varName), expr));
-        value.quasis[index].value.raw = `\${${varName}}`;
-      });
-
-      path.node.value = t.jsxExpressionContainer(
-        t.callExpression(t.identifier("t"), [
-          t.stringLiteral(key),
-          t.objectExpression(args)
-        ])
-      );
-    } else {
-      path.node.value = t.jsxExpressionContainer(
-        t.callExpression(t.identifier("t"), [t.stringLiteral(key)])
-      );
-    }
-
-    console.log(`Updated aria-label: ${textValue} -> ${key}`);
+    path.node.value = t.jsxExpressionContainer(
+      processLiteralValue(value, config, filePath, updatedTranslations)
+    );
+    console.log("...Updated aria-label...");
     return true;
   }
   return false;
@@ -51,33 +29,10 @@ const processJSXElements = (path, config, filePath, updatedTranslations) => {
       (t.isStringLiteral(attr.value) || t.isTemplateLiteral(attr.value)) &&
       !isURL(attr.value.value)
     ) {
-      const textValue = t.isTemplateLiteral(attr.value)
-        ? attr.value.quasis.map(quasi => quasi.value.raw).join('${')
-        : attr.value.value;
-      const key = createTranslationKey(config.componentsDir, filePath, textValue);
-      updatedTranslations[key] = textValue.replace(/\$\{([^\}]+)\}/g, '${$1}');
-
-      if (t.isTemplateLiteral(attr.value)) {
-        const args = [];
-        attr.value.expressions.forEach((expr, index) => {
-          const varName = `var${index}`;
-          args.push(t.objectProperty(t.identifier(varName), expr));
-          attr.value.quasis[index].value.raw = `\${${varName}}`;
-        });
-
-        attr.value = t.jsxExpressionContainer(
-          t.callExpression(t.identifier("t"), [
-            t.stringLiteral(key),
-            t.objectExpression(args)
-          ])
-        );
-      } else {
-        attr.value = t.jsxExpressionContainer(
-          t.callExpression(t.identifier("t"), [t.stringLiteral(key)])
-        );
-      }
-
-      console.log(`Updated title: ${textValue} -> ${key}`);
+      attr.value = t.jsxExpressionContainer(
+        processLiteralValue(attr.value, config, filePath, updatedTranslations)
+      );
+      console.log("...Updated title...");
       updated = true;
     }
   });
@@ -109,25 +64,30 @@ const processJSXText = (path, config, filePath, updatedTranslations) => {
     }
 
     if (hasVariables) {
-      const key = createTranslationKey(config.componentsDir, filePath, parts.join(" "));
-      updatedTranslations[key] = parts.join(" ").replace(/\$\{([^\}]+)\}/g, '${$1}');
-      const args = [];
-      parts.forEach((part, index) => {
-        if (part.startsWith("${") && part.endsWith("}")) {
+      const key = createTranslationKey(
+        config.componentsDir,
+        filePath,
+        parts.join(" ")
+      );
+      updatedTranslations[key] = parts
+        .join(" ")
+        .replace(/\$\{([^\}]+)\}/g, "${$1}");
+      const args = parts
+        .filter((part) => part.startsWith("${") && part.endsWith("}"))
+        .map((part) => {
           const varName = part.slice(2, -1);
-          args.push(t.objectProperty(t.identifier(varName), t.identifier(varName)));
-        }
-      });
+          return t.objectProperty(t.identifier(varName), t.identifier(varName));
+        });
 
       path.replaceWith(
         t.jsxExpressionContainer(
           t.callExpression(t.identifier("t"), [
             t.stringLiteral(key),
-            t.objectExpression(args)
+            t.objectExpression(args),
           ])
         )
       );
-      console.log(`Updated text: ${value} -> ${key}`);
+      console.log("...Updated innerText...");
       return true;
     } else {
       const key = createTranslationKey(config.componentsDir, filePath, value);
@@ -137,7 +97,7 @@ const processJSXText = (path, config, filePath, updatedTranslations) => {
           t.callExpression(t.identifier("t"), [t.stringLiteral(key)])
         )
       );
-      console.log(`Updated text: ${value} -> ${key}`);
+      console.log("...Updated innerText...");
       return true;
     }
   }
