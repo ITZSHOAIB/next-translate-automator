@@ -11,7 +11,9 @@ const processObjectProperties = (
 ) => {
   const { value } = path.node;
   if (
-    (t.isStringLiteral(value) || t.isTemplateLiteral(value)) &&
+    (t.isStringLiteral(value) ||
+      t.isTemplateLiteral(value) ||
+      t.isBinaryExpression(value)) &&
     !isURL(value.value)
   ) {
     path.node.value = processLiteralValue(
