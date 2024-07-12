@@ -1,0 +1,32 @@
+{
+  "name": "next-translate-automator",
+  "version": "1.0.0",
+  "description": "A Next Translate automator",
+  "main": "src/index.js",
+  "bin": {
+    "next-translate-automator": "./src/cli.js"
+  },
+  "scripts": {
+    "start": "node src/cli.js"
+  },
+  "keywords": [
+    "react",
+    "i18n",
+    "internationalization",
+    "next.js",
+    "babel",
+    "automation",
+    "translation",
+    "next-translate"
+  ],
+  "author": "Your Name",
+  "license": "MIT",
+  "dependencies": {
+    "@babel/core": "^7.24.8",
+    "@babel/generator": "^7.24.8",
+    "@babel/parser": "^7.24.8",
+    "@babel/traverse": "^7.24.8",
+    "@babel/types": "^7.24.8",
+    "commander": "^12.1.0"
+  }
+}
