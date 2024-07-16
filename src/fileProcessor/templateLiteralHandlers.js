@@ -17,7 +17,7 @@ const collectConcatenatedStrings = (node) => {
       traverseNode(n.left);
       traverseNode(n.right);
     } else if (t.isIdentifier(n) || t.isMemberExpression(n)) {
-      parts.push(`\${${n.name || n.property.name}}`);
+      parts.push(`{{${n.name || n.property.name}}}`);
     }
   };
   traverseNode(node);
@@ -32,9 +32,9 @@ const processLiteralValue = (node, config, filePath, updatedTranslations) => {
   updatedTranslations[key] = textValue;
 
   const args = parts
-    .filter((part) => part.startsWith("${") && part.endsWith("}"))
+    .filter((part) => part.startsWith("{{") && part.endsWith("}}"))
     .map((part) => {
-      const varName = part.slice(2, -1);
+      const varName = part.slice(2, -2);
       return t.objectProperty(t.identifier(varName), t.identifier(varName));
     });
 

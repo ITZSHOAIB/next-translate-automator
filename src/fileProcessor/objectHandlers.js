@@ -1,7 +1,8 @@
 const t = require("@babel/types");
-const { createTranslationKey } = require("../translation");
 const { isURL } = require("../utils");
 const { processLiteralValue } = require("./templateLiteralHandlers");
+
+const objectPropertyNames = ["description", "message"];
 
 const processObjectProperties = (
   path,
@@ -9,23 +10,23 @@ const processObjectProperties = (
   filePath,
   updatedTranslations
 ) => {
-  const { value } = path.node;
+  const { key, value } = path.node;
   if (
-    (t.isStringLiteral(value) ||
-      t.isTemplateLiteral(value) ||
-      t.isBinaryExpression(value)) &&
-    !isURL(value.value)
+    !objectPropertyNames.includes(key.name) ||
+    (!t.isStringLiteral(value) && !t.isTemplateLiteral(value)) ||
+    isURL(value.value)
   ) {
-    path.node.value = processLiteralValue(
-      value,
-      config,
-      filePath,
-      updatedTranslations
-    );
-    console.log("...Updated variable...");
-    return true;
+    return false;
   }
-  return false;
+
+  path.node.value = processLiteralValue(
+    value,
+    config,
+    filePath,
+    updatedTranslations
+  );
+  console.log("...Updated variable...");
+  return true;
 };
 
 module.exports = {

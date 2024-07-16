@@ -1,5 +1,4 @@
 const t = require("@babel/types");
-const { createTranslationKey } = require("../translation");
 const { isURL } = require("../utils");
 const { processLiteralValue } = require("./templateLiteralHandlers");
 
@@ -43,10 +42,13 @@ const processJSXText = (path, config, filePath, updatedTranslations) => {
   const value = path.node.value.trim();
   if (value && !isURL(value)) {
     const textNode = t.stringLiteral(value);
-    const callExpression = processLiteralValue(textNode, config, filePath, updatedTranslations);
-    path.replaceWith(
-      t.jsxExpressionContainer(callExpression)
+    const callExpression = processLiteralValue(
+      textNode,
+      config,
+      filePath,
+      updatedTranslations
     );
+    path.replaceWith(t.jsxExpressionContainer(callExpression));
     console.log("...Updated innerText...");
     return true;
   }
